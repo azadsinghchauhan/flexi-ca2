@@ -22,6 +22,28 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "news-agent-secret-key-2026")
 # Automatically initialize database schema on startup
 try:
     init_db()
+    with get_db() as _db:
+        if _db.query(Topic).count() == 0:
+            defaults = [
+                {
+                    "name": "Autonomous AI Agents & Orchestration",
+                    "keywords": "agentic workflows, LLM reasoning, multi-agent systems, tool use, reflection loop",
+                    "frequency": "Daily"
+                },
+                {
+                    "name": "Quantum Computing & Post-Quantum Security",
+                    "keywords": "fault-tolerant quantum, logical qubits, NIST PQC, surface code, cryogenic CMOS",
+                    "frequency": "Daily"
+                },
+                {
+                    "name": "Next-Gen Energy Storage & Batteries",
+                    "keywords": "solid-state battery, sodium-ion grid, energy density, cathode chemistry, fast charging",
+                    "frequency": "Daily"
+                }
+            ]
+            for item in defaults:
+                _db.add(Topic(name=item["name"], keywords=item["keywords"], frequency=item["frequency"], active=True))
+            _db.commit()
 except Exception as init_err:
     print(f"[WARN] Database initialization warning: {init_err}")
 
