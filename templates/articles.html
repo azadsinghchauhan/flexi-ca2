@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Articles & Intelligence Feed // Automated News Topic Monitoring Using Agentic AI{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 2rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;">
+      <span class="badge badge-ai">Structured Extraction</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Step 8 & 9: Groq JSON Mode</span>
+    </div>
+    <h2 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">
+      Intelligence Feed
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-top: 0.25rem;">
+      Verified news signals deduplicated, scored, and enriched with 3 key points, entity tags, and importance rationales.
+    </p>
+  </div>
+
+  <button class="btn btn-primary" onclick="startMonitoringPipeline()">
+    <span>⚡ Run Monitoring Now</span>
+  </button>
+</div>
+
+<!-- Multi-Filter & Search Bar -->
+<div class="glass-card" style="padding: 1.25rem; margin-bottom: 2rem;">
+  <form action="{{ url_for('articles_page') }}" method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 1rem; align-items: flex-end;">
+    <!-- Topic Filter -->
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="filterTopic">Filter By Topic</label>
+      <select id="filterTopic" name="topic_id" class="form-control">
+        <option value="">All Topics</option>
+        {% for t in topics %}
+          <option value="{{ t.id }}" {% if selected_topic_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Importance Filter -->
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="filterImportance">Priority Level</label>
+      <select id="filterImportance" name="importance" class="form-control">
+        <option value="">All Priorities</option>
+        <option value="High" {% if selected_importance == 'High' %}selected{% endif %}>High Priority</option>
+        <option value="Medium" {% if selected_importance == 'Medium' %}selected{% endif %}>Medium</option>
+        <option value="Low" {% if selected_importance == 'Low' %}selected{% endif %}>Low</option>
+      </select>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="filterCategory">Domain Category</label>
+      <select id="filterCategory" name="category" class="form-control">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Search Input -->
+    <div class="form-group" style="margin-bottom: 0;">
+      <label class="form-label" for="filterQuery">Keyword Search</label>
+      <input type="text" id="filterQuery" name="q" class="form-control" placeholder="Search title or summary..." value="{{ search_query }}">
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="submit" class="btn btn-secondary" style="padding: 0.7rem 1.25rem;">
+        Filter
+      </button>
+      {% if selected_topic_id or selected_importance or selected_category or search_query %}
+        <a href="{{ url_for('articles_page') }}" class="btn btn-secondary" style="padding: 0.7rem 0.85rem;" title="Clear Filters">
+          &times;
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Articles Grid -->
+{% if articles %}
+  <div class="articles-grid">
+    {% for art in articles %}
+      <div class="glass-card article-card">
+        <div>
+          <div class="article-header">
+            <span class="badge badge-ai">AI Analysis</span>
+            {% if art.importance == 'High' %}
+              <span class="badge badge-importance-high">High Priority</span>
+            {% elif art.importance == 'Medium' %}
+              <span class="badge badge-importance-medium">Medium</span>
+            {% else %}
+              <span class="badge badge-importance-low">Low</span>
+            {% endif %}
+          </div>
+
+          <div class="article-meta-row">
+            <span style="color: var(--accent-cyan); font-weight: 600;">{{ art.source or 'Web Source' }}</span>
+            <span>&bull;</span>
+            <span>{{ art.category }}</span>
+            <span>&bull;</span>
+            <span>{{ art.published_at.strftime("%b %d, %Y") if art.published_at else 'Recent' }}</span>
+            {% if art.topic %}
+              <span>&bull;</span>
+              <span class="pill-tag">{{ art.topic.name }}</span>
+            {% endif %}
+          </div>
+
+          <h4 class="article-title">
+            <a href="{{ art.url }}" target="_blank" rel="noopener noreferrer">{{ art.title }}</a>
+          </h4>
+
+          <p class="article-summary">{{ art.summary }}</p>
+
+          <!-- 3 Key Takeaways -->
+          <div class="key-points-box">
+            <div class="key-points-title">3 Key Takeaways</div>
+            <ul class="key-points-list">
+              {% for pt in art.get_key_points_list() %}
+                <li>{{ pt }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <!-- Relevance Meter -->
+          <div class="relevance-meter">
+            <div class="relevance-header">
+              <span>Relevance Score</span>
+              <span style="font-family: var(--font-mono); font-weight: 700;">{{ art.relevance }}%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: {{ art.relevance }}%;"></div>
+            </div>
+          </div>
+
+          {% if art.reason %}
+            <div class="importance-reason">
+              <strong>Strategic Rationale:</strong> {{ art.reason }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="article-footer">
+          <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+            {% if art.trend %}
+              <span class="pill-tag" style="background: rgba(157, 78, 221, 0.15); border-color: rgba(157, 78, 221, 0.3); color: #ffffff;">
+                📈 {{ art.trend }}
+              </span>
+            {% endif %}
+            {% for ent in art.get_entities_list()[:2] %}
+              <span class="pill-tag">{{ ent }}</span>
+            {% endfor %}
+          </div>
+          <a href="{{ art.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;">
+            Source ↗
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="glass-card" style="text-align: center; padding: 4rem 1.5rem;">
+    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔍</div>
+    <h4 style="font-size: 1.2rem; color: #ffffff; margin-bottom: 0.5rem;">No Matching Articles Found</h4>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 480px; margin: 0 auto 1.5rem;">
+      No articles matched your active filter criteria. Try adjusting the filters or launch a fresh monitoring cycle.
+    </p>
+    <a href="{{ url_for('articles_page') }}" class="btn btn-secondary">Clear All Filters</a>
+  </div>
+{% endif %}
+{% endblock %}

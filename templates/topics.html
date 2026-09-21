@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Topics & Goals // Automated News Topic Monitoring Using Agentic AI{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 2rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;">
+      <span class="badge badge-ai">Goal Specification</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Step 1: Topic Definition</span>
+    </div>
+    <h2 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">
+      Monitoring Goals & Keywords
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-top: 0.25rem;">
+      Define news topics and keyword vectors that direct the autonomous agent's search, filtering, and trend clustering.
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 0.85rem; flex-wrap: wrap;">
+    <form action="{{ url_for('api_seed_topics') }}" method="POST" style="display: inline;">
+      <button type="submit" class="btn btn-glow-violet">
+        <span>✨ Seed Academic Defaults</span>
+      </button>
+    </form>
+    <button class="btn btn-primary" onclick="document.getElementById('addTopicModal').classList.add('active')">
+      <span>+ Add New Topic</span>
+    </button>
+  </div>
+</div>
+
+<!-- Topics Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+  {% for topic in topics %}
+    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; line-height: 1.3;">
+            {{ topic.name }}
+          </h3>
+          
+          <!-- Active Toggle -->
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+            <input type="checkbox" class="topic-toggle-checkbox" data-topic-id="{{ topic.id }}" {% if topic.active %}checked{% endif %} style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 24px; transition: .3s; display: flex; align-items: center; padding: 2px;">
+              <span style="position: absolute; height: 18px; width: 18px; left: {% if topic.active %}22px{% else %}2px{% endif %}; background-color: {% if topic.active %}var(--accent-cyan){% else %}var(--text-muted){% endif %}; border-radius: 50%; transition: .3s; box-shadow: 0 0 8px {% if topic.active %}var(--accent-cyan){% else %}transparent{% endif %};"></span>
+            </span>
+          </label>
+        </div>
+
+        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; display: flex; gap: 0.5rem; align-items: center;">
+          <span class="pill-tag">{{ topic.frequency }} Interval</span>
+          <span>&bull;</span>
+          <span style="font-family: var(--font-mono);">{{ topic.articles|length }} Articles Monitored</span>
+        </div>
+
+        <!-- Keyword Tags -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; letter-spacing: 0.05em;">
+            Target Keywords
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+            {% for kw in topic.get_keywords_list() %}
+              <span class="pill-tag" style="background: rgba(0, 240, 255, 0.08); border-color: rgba(0, 240, 255, 0.2); color: #ffffff;">{{ kw }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 1rem; margin-top: 1rem;">
+        <form action="{{ url_for('api_delete_topic', topic_id=topic.id) }}" method="POST" onsubmit="return confirm('Delete topic {{ topic.name }} and all associated articles?');">
+          <button type="submit" class="btn btn-danger btn-sm" style="font-size: 0.75rem;">Delete</button>
+        </form>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="{{ url_for('articles_page', topic_id=topic.id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem;">
+            View Feed
+          </a>
+          <button class="btn btn-primary btn-sm" style="font-size: 0.75rem;" onclick="startMonitoringPipeline({{ topic.id }})">
+            ⚡ Run Agent
+          </button>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="glass-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
+      <h4 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 0.5rem;">No Topics Configured</h4>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 480px; margin: 0 auto 1.5rem;">
+        Add your first news monitoring topic or click below to populate realistic academic default topics (AI, Quantum, Energy).
+      </p>
+      <div style="display: flex; justify-content: center; gap: 1rem;">
+        <form action="{{ url_for('api_seed_topics') }}" method="POST">
+          <button type="submit" class="btn btn-glow-violet">
+            <span>✨ Seed Academic Defaults</span>
+          </button>
+        </form>
+        <button class="btn btn-primary" onclick="document.getElementById('addTopicModal').classList.add('active')">
+          <span>+ Add Topic</span>
+        </button>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Modal: Add New Topic -->
+<div id="addTopicModal" class="modal-backdrop">
+  <div class="modal-window" style="max-width: 540px;">
+    <div class="modal-header">
+      <h3>+ Define New Monitoring Topic</h3>
+      <button onclick="document.getElementById('addTopicModal').classList.remove('active')" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <form action="{{ url_for('api_create_topic') }}" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="topicName">Topic Title</label>
+          <input type="text" id="topicName" name="name" class="form-control" placeholder="e.g. Autonomous AI Agents & LLMs" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="topicKeywords">Target Keywords (Comma Separated)</label>
+          <textarea id="topicKeywords" name="keywords" class="form-control" rows="3" placeholder="e.g. agentic workflows, LLM reasoning, multi-agent systems, tool use" required></textarea>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+            These keywords will be used to construct Tavily search vectors, relevance scores, and duplicate token comparisons.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="topicFrequency">Target Execution Frequency</label>
+          <select id="topicFrequency" name="frequency" class="form-control">
+            <option value="Hourly">Hourly</option>
+            <option value="Daily" selected>Daily (Vercel Cron)</option>
+            <option value="Weekly">Weekly</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('addTopicModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save & Register Topic</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

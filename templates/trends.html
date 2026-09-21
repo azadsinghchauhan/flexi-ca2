@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Explainable Trend Detection // Automated News Topic Monitoring Using Agentic AI{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 2rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;">
+      <span class="badge badge-ai">Deterministic Trend Analytics</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Step 10: 7-Day Velocity Model</span>
+    </div>
+    <h2 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">
+      Explainable Trend Intelligence
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-top: 0.25rem;">
+      Transparent, auditable growth computation comparing 7-day trailing windows. No black-box machine learning.
+    </p>
+  </div>
+
+  <!-- Topic Selector -->
+  <div>
+    <form action="{{ url_for('trends_page') }}" method="GET" style="display: flex; gap: 0.5rem;">
+      <select name="topic_id" class="form-control" onchange="this.form.submit()" style="min-width: 220px;">
+        <option value="">All Topics Aggregate</option>
+        {% for t in topics %}
+          <option value="{{ t.id }}" {% if selected_topic_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<!-- Explainable Formula Viva Banner -->
+<div class="formula-banner">
+  <div class="formula-title">
+    <span>📐 Explainable Mathematical Formulation (Viva Defense Ready)</span>
+  </div>
+  
+  <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center;">
+    <div class="formula-math">
+      Growth = (Recent - Previous) / max(Previous, 1)
+    </div>
+    <div class="formula-math" style="border-color: rgba(0, 230, 118, 0.3); color: var(--accent-emerald);">
+      Emerging Flag = (Recent &ge; 3) &and; (Growth &ge; +50%)
+    </div>
+  </div>
+
+  <div class="formula-notes">
+    <strong>Auditing Logic:</strong> The agent aggregates extracted trend labels and named entities. It partitions article publication dates into two distinct non-overlapping 7-day temporal windows: $t_{0}$ to $t_{-7}$ (Recent) versus $t_{-7}$ to $t_{-14}$ (Previous). Trends with accelerating mention volume exceeding 50% relative surge are escalated as <em>Emerging Signals</em>.
+  </div>
+</div>
+
+<!-- Visual Velocity Chart -->
+<div class="glass-card" style="margin-bottom: 2.5rem;">
+  <div style="margin-bottom: 1.25rem;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff;">7-Day Temporal Trajectory Comparison</h3>
+    <p style="font-size: 0.8rem; color: var(--text-muted);">Comparing current 7-day window vs preceding 7-day baseline</p>
+  </div>
+  <div style="height: 280px; position: relative;">
+    <canvas id="detailedTrendChart"></canvas>
+  </div>
+</div>
+
+<!-- Trend Clusters Breakdown Grid -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+  <h3 style="font-size: 1.2rem; font-weight: 700; color: #ffffff;">
+    Detected Trend Clusters ({{ total_trends }})
+  </h3>
+  <span style="font-size: 0.82rem; color: var(--accent-emerald); font-weight: 600;">
+    {{ emerging_count }} Emerging Breakthrough Signals
+  </span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1.5rem;">
+  {% for t in trends %}
+    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <h4 style="font-size: 1.18rem; font-weight: 700; color: #ffffff;">
+            {{ t.name }}
+          </h4>
+          <span class="badge {{ t.badge_class }}">
+            {% if t.is_emerging %}★ {% endif %}{{ t.status_badge }} ({{ t.growth_pct }}%)
+          </span>
+        </div>
+
+        <!-- Metric comparison counters -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; background: rgba(14, 19, 31, 0.75); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 1rem;">
+          <div style="text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-cyan);">{{ t.recent_count }}</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Last 7 Days</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-violet);">{{ t.previous_count }}</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Prior 7 Days</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 800; color: {% if t.growth > 0 %}var(--accent-emerald){% elif t.growth == 0 %}var(--text-secondary){% else %}var(--accent-rose){% endif %};">
+              {{ t.growth_pct }}%
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Growth Rate</div>
+          </div>
+        </div>
+
+        <!-- Related Keywords -->
+        <div style="margin-bottom: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem;">
+            Co-Occurring Entities
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+            {% for kw in t.related_keywords %}
+              <span class="pill-tag">{{ kw }}</span>
+            {% else %}
+              <span style="font-size: 0.75rem; color: var(--text-muted);">None recorded</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Example Articles -->
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem;">
+            Representative Monitored Signals
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+            {% for ex in t.example_articles %}
+              <a href="{{ ex.url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; color: var(--text-primary); text-decoration: none; display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(22, 31, 51, 0.4); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); transition: background var(--transition-fast);">
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ex.title }}</span>
+                <span style="color: var(--accent-cyan); font-size: 0.72rem; white-space: nowrap;">{{ ex.source }} ↗</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="glass-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📊</div>
+      <h4 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 0.5rem;">No Trend Clusters Detected Yet</h4>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 480px; margin: 0 auto 1.5rem;">
+        Run the agentic monitoring cycle to gather articles, extract trend labels, and compute mathematical growth trajectories.
+      </p>
+      <button class="btn btn-primary" onclick="startMonitoringPipeline()">
+        <span>⚡ Run Monitoring Now</span>
+      </button>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const chartCtx = document.getElementById('detailedTrendChart');
+  if (chartCtx) {
+    const trendsData = {{ trends|tojson }};
+    const labels = trendsData.map(t => t.name);
+    const recent = trendsData.map(t => t.recent_count);
+    const previous = trendsData.map(t => t.previous_count);
+
+    new Chart(chartCtx, {
+      type: 'bar',
+      data: {
+        labels: labels.length ? labels : ['Autonomous Agents', 'Quantum PQC', 'Solid-State Battery'],
+        datasets: [
+          {
+            label: 'Recent 7 Days',
+            data: recent.length ? recent : [5, 3, 4],
+            backgroundColor: 'rgba(0, 240, 255, 0.8)',
+            borderColor: '#00f0ff',
+            borderWidth: 1,
+            borderRadius: 6
+          },
+          {
+            label: 'Previous 7 Days',
+            data: previous.length ? previous : [2, 1, 2],
+            backgroundColor: 'rgba(157, 78, 221, 0.65)',
+            borderColor: '#9d4edd',
+            borderWidth: 1,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#94a3b8', font: { family: 'Outfit', size: 12 } }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 12 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#94a3b8', stepSize: 1, font: { family: 'JetBrains Mono', size: 11 } }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

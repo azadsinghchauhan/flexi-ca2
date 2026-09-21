@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AuraNews // Agentic News Topic Monitor{% endblock %}</title>
+  <meta name="description" content="Autonomous News Topic Monitoring Web App Powered by Agentic AI, Groq LLMs, and Explainable Trend Detection.">
+  
+  <!-- Google Fonts & Chart.js CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <a href="{{ url_for('dashboard') }}" class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>AuraNews // Agentic AI</h1>
+          <p>Autonomous Topic Intelligence</p>
+        </div>
+      </a>
+
+      <!-- Primary Navigation -->
+      <ul class="nav-menu">
+        <li>
+          <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('topics_page') }}" class="nav-link {% if request.endpoint == 'topics_page' %}active{% endif %}">
+            <span>Topics</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('articles_page') }}" class="nav-link {% if request.endpoint == 'articles_page' %}active{% endif %}">
+            <span>Articles</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('trends_page') }}" class="nav-link {% if request.endpoint == 'trends_page' %}active{% endif %}">
+            <span>Trends</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('logs_page') }}" class="nav-link {% if request.endpoint == 'logs_page' %}active{% endif %}">
+            <span>Agent Logs</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('reports_page') }}" class="nav-link {% if request.endpoint == 'reports_page' %}active{% endif %}">
+            <span>Reports</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('alerts_page') }}" class="nav-link {% if request.endpoint == 'alerts_page' %}active{% endif %}">
+            <span>Alerts</span>
+            {% if unread_alerts_count > 0 %}
+              <span class="nav-badge">{{ unread_alerts_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+      </ul>
+
+      <!-- Action & Status Controls -->
+      <div class="header-actions">
+        <div class="system-status-indicator" title="Model: {{ groq_model }}">
+          {% if is_demo_mode %}
+            <span class="status-dot demo"></span>
+            <span>Demo Mode</span>
+          {% else %}
+            <span class="status-dot"></span>
+            <span>Groq Live</span>
+          {% endif %}
+        </div>
+
+        <button id="headerRunMonitoringBtn" class="btn btn-primary btn-sm" onclick="startMonitoringPipeline()">
+          <span>▶ Run Monitoring Now</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Messages Toast -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="max-width: 1440px; margin: 1rem auto 0; padding: 0 2rem;">
+        {% for category, message in messages %}
+          <div style="padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem; font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between; 
+            {% if category == 'error' %}background: rgba(255, 51, 102, 0.15); border: 1px solid var(--accent-rose); color: #ff85a1;{% else %}background: rgba(0, 230, 118, 0.12); border: 1px solid var(--accent-emerald); color: #69f0ae;{% endif %}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main View Container -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Global 12-Step Agent Pipeline Modal -->
+  <div id="agentModalBackdrop" class="modal-backdrop">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>
+          <span style="color: var(--accent-cyan); animation: pulse-dot 1.5s infinite;">●</span>
+          <span>Agentic Pipeline Orchestrator</span>
+        </h3>
+        <span id="modalActiveTopic" style="font-size: 0.82rem; color: var(--text-secondary); font-family: var(--font-mono);">
+          Ready
+        </span>
+      </div>
+
+      <div class="modal-body">
+        <!-- Progress Bar -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+            <span id="modalStatusText">Initializing...</span>
+            <span style="font-family: var(--font-mono);">12-Step Engine</span>
+          </div>
+          <div class="progress-bar-bg" style="height: 8px;">
+            <div id="modalProgressFill" class="progress-bar-fill" style="width: 10%;"></div>
+          </div>
+        </div>
+
+        <!-- 12 Pipeline Steps Stream -->
+        <div id="modalPipelineSteps" class="pipeline-steps-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Summary Stats (Displayed upon completion) -->
+        <div id="modalSummaryStats" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle);">
+          <div style="background: rgba(14, 19, 31, 0.7); padding: 0.65rem; border-radius: var(--radius-sm); text-align: center;">
+            <div id="modalStatFound" style="font-size: 1.2rem; font-weight: 700; color: #ffffff;">0</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Articles Found</div>
+          </div>
+          <div style="background: rgba(14, 19, 31, 0.7); padding: 0.65rem; border-radius: var(--radius-sm); text-align: center;">
+            <div id="modalStatProcessed" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-emerald);">0</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Analyzed & Saved</div>
+          </div>
+          <div style="background: rgba(14, 19, 31, 0.7); padding: 0.65rem; border-radius: var(--radius-sm); text-align: center;">
+            <div id="modalStatDups" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-amber);">0</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">Duplicates Cut</div>
+          </div>
+          <div style="background: rgba(14, 19, 31, 0.7); padding: 0.65rem; border-radius: var(--radius-sm); text-align: center;">
+            <div id="modalStatAlerts" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-rose);">0</div>
+            <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase;">High Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalCloseBtn" class="btn btn-secondary btn-sm" style="display: none;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid var(--border-subtle); padding: 2rem; margin-top: 3rem; background: var(--bg-surface); text-align: center; font-size: 0.82rem; color: var(--text-secondary);">
+    <div style="max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+      <div>
+        <strong style="color: var(--text-primary);">Automated News Topic Monitoring Using Agentic AI</strong> &bull; College Flexi Credit Project
+      </div>
+      <div style="display: flex; gap: 1rem; font-family: var(--font-mono); font-size: 0.75rem;">
+        <span>Architecture: 12-Step Agent Pipeline</span>
+        <span>&bull;</span>
+        <span>LLM: Groq {{ groq_model }}</span>
+        <span>&bull;</span>
+        <span>Deployment: Vercel Serverless</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

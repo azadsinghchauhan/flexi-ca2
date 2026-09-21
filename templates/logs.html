@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Execution Logs // Automated News Topic Monitoring Using Agentic AI{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 2rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;">
+      <span class="badge badge-ai">Telemetry & Verification</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Step 12: Audit Trail</span>
+    </div>
+    <h2 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">
+      Agent Execution Telemetry
+    </h2>
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-top: 0.25rem;">
+      Comprehensive audit logs recording step durations, duplicate counts, error resilience, and agent actions.
+    </p>
+  </div>
+
+  <button class="btn btn-primary" onclick="startMonitoringPipeline()">
+    <span>⚡ Run Monitoring Now</span>
+  </button>
+</div>
+
+<!-- Logs Table Container -->
+<div class="glass-card">
+  <div class="data-table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Execution Timestamp</th>
+          <th>Topic Name</th>
+          <th>Candidates Found</th>
+          <th>Processed & Saved</th>
+          <th>Deduplications</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+          <tr>
+            <td style="font-family: var(--font-mono); color: var(--text-muted);">#{{ log.id }}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.82rem;">{{ log.run_time.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+            <td style="font-weight: 600; color: #ffffff;">{{ log.topic.name if log.topic else 'Topic #' ~ log.topic_id }}</td>
+            <td style="font-family: var(--font-mono);">{{ log.articles_found }}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight: 700;">{{ log.articles_processed }}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-amber);">{{ log.duplicates_removed }}</td>
+            <td>
+              {% if log.status == 'Success' %}
+                <span class="badge badge-status-success">Success</span>
+              {% else %}
+                <span class="badge badge-status-failed">{{ log.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;" onclick='openStepDetailModal({{ log.to_dict()|tojson }})'>
+                🔍 Inspect 12 Steps
+              </button>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 3rem 1.5rem;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+              <div>No agent execution logs recorded yet.</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Run the monitoring pipeline to generate execution telemetry.</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal for Inspecting Detailed 12 Steps of a Past Run -->
+<div id="logInspectionModal" class="modal-backdrop">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3>
+        <span style="color: var(--accent-cyan);">📋</span>
+        <span id="inspectModalTitle">Agent Run Audit Inspection</span>
+      </h3>
+      <button onclick="document.getElementById('logInspectionModal').classList.remove('active')" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div id="inspectModalMeta" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: 1rem;">
+        <!-- Filled via JS -->
+      </div>
+
+      <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em;">
+        Step Execution Timeline (1 to 12)
+      </div>
+
+      <div id="inspectStepsContainer" class="pipeline-steps-container">
+        <!-- Steps populated dynamically -->
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('logInspectionModal').classList.remove('active')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openStepDetailModal(logData) {
+  const modal = document.getElementById("logInspectionModal");
+  const title = document.getElementById("inspectModalTitle");
+  const meta = document.getElementById("inspectModalMeta");
+  const stepsContainer = document.getElementById("inspectStepsContainer");
+
+  title.innerText = `Audit Inspection: ${logData.topic_name} (#${logData.id})`;
+  meta.innerHTML = `
+    <div><strong>Run Time:</strong> ${logData.run_time}</div>
+    <div><strong>Found:</strong> ${logData.articles_found}</div>
+    <div><strong>Saved:</strong> ${logData.articles_processed}</div>
+    <div><strong>Deduplications:</strong> ${logData.duplicates_removed}</div>
+    <div><strong>Status:</strong> <span class="badge ${logData.status === 'Success' ? 'badge-status-success' : 'badge-status-failed'}">${logData.status}</span></div>
+  `;
+
+  stepsContainer.innerHTML = "";
+  if (logData.steps && logData.steps.length > 0) {
+    logData.steps.forEach(st => {
+      const row = document.createElement("div");
+      row.className = `pipeline-step-row ${st.status}`;
+      const statusIcon = st.status === "success" ? "✓" : (st.status === "failed" ? "✕" : "!");
+      const statusColor = st.status === "success" ? "var(--accent-emerald)" : "var(--accent-rose)";
+
+      row.innerHTML = `
+        <div class="step-info">
+          <span class="step-num">${st.step_number}</span>
+          <span class="step-name">${st.name}</span>
+        </div>
+        <div class="step-meta" style="text-align: right;">
+          <span style="color: ${statusColor}; font-weight: 600;">${statusIcon} ${st.duration_ms}ms</span>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${st.details || ''}">
+            ${st.details || ''}
+          </div>
+        </div>
+      `;
+      stepsContainer.appendChild(row);
+    });
+  } else {
+    stepsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No granular step telemetry available for this run.</div>`;
+  }
+
+  modal.classList.add("active");
+}
+</script>
+{% endblock %}
