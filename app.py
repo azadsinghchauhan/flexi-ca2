@@ -82,11 +82,28 @@ def inject_global_stats():
         }
 
 
+class VercelPathMiddleware(object):
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        if path.startswith("/api/index.py"):
+            environ["PATH_INFO"] = path[len("/api/index.py"):] or "/"
+        elif path.startswith("/api/index"):
+            environ["PATH_INFO"] = path[len("/api/index"):] or "/"
+        return self.wsgi_app(environ, start_response)
+
+app.wsgi_app = VercelPathMiddleware(app.wsgi_app)
+
+
 # ==============================================================================
 # UI Routes (Views Only)
 # ==============================================================================
 
 @app.route("/")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def dashboard():
     """Dashboard view with high-level metrics, live chart data, and quick alerts."""
     with get_db() as db:
