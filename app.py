@@ -1,6 +1,6 @@
 import os
 import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from dotenv import load_dotenv
 
 # Database & Models
@@ -95,6 +95,12 @@ class VercelPathMiddleware(object):
         return self.wsgi_app(environ, start_response)
 
 app.wsgi_app = VercelPathMiddleware(app.wsgi_app)
+
+
+# Explicit static route ensuring CSS and JS assets are always served reliably on serverless
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 
 # ==============================================================================
