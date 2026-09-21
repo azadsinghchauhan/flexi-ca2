@@ -406,6 +406,7 @@ def api_health():
         "status": "online" if db_ok else "degraded",
         "database_connected": db_ok,
         "database_error": db_err,
+        "engine_url": str(engine.url),
         "articles_monitored": article_count,
         "topics_registered": topic_count,
         "demo_mode": DEMO_MODE or not bool(GROQ_API_KEY and TAVILY_API_KEY),
