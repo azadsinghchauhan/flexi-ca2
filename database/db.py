@@ -46,15 +46,27 @@ except Exception as e:
 SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=engine))
 
 
+_initialized = False
+
+
 def init_db():
     """Create all database tables if they do not exist."""
+    global _initialized
     import database.models  # Ensure models are registered with Base
     Base.metadata.create_all(bind=engine)
+    _initialized = True
 
 
 @contextmanager
 def get_db():
     """Provide a transactional scope around a series of operations."""
+    global _initialized
+    if not _initialized:
+        try:
+            init_db()
+        except Exception as e:
+            print(f"[WARN] Error in get_db auto init_db: {e}", file=sys.stderr)
+
     session = SessionLocal()
     try:
         yield session

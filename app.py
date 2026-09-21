@@ -393,6 +393,7 @@ def api_health():
     db_ok = False
     article_count = 0
     topic_count = 0
+    db_err = None
     try:
         with get_db() as db:
             article_count = db.query(Article).count()
@@ -404,6 +405,7 @@ def api_health():
     return jsonify({
         "status": "online" if db_ok else "degraded",
         "database_connected": db_ok,
+        "database_error": db_err,
         "articles_monitored": article_count,
         "topics_registered": topic_count,
         "demo_mode": DEMO_MODE or not bool(GROQ_API_KEY and TAVILY_API_KEY),
@@ -429,6 +431,18 @@ def page_not_found(e):
         "x_vercel_id": request.environ.get("HTTP_X_VERCEL_ID"),
         "path_info_keys": [k for k in request.environ.keys() if "PATH" in k or "URI" in k or "VERCEL" in k]
     }), 404
+
+
+@app.errorhandler(500)
+def handle_500(e):
+    """Diagnostic 500 handler returning full traceback."""
+    import traceback
+    return jsonify({
+        "status": 500,
+        "error": "Internal Server Error",
+        "exception": str(e),
+        "traceback": traceback.format_exc()
+    }), 500
 
 
 if __name__ == "__main__":
