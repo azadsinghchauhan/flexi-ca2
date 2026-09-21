@@ -43,7 +43,7 @@ except Exception as e:
     print(f"[WARN] Failed to connect to {raw_db_url}: {e}. Falling back to in-memory SQLite.", file=sys.stderr)
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
 
-SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=engine))
 
 
 def init_db():

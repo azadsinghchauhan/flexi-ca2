@@ -16,8 +16,8 @@ class Topic(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    articles = relationship("Article", back_populates="topic", cascade="all, delete-orphan")
-    logs = relationship("MonitoringLog", back_populates="topic", cascade="all, delete-orphan")
+    articles = relationship("Article", back_populates="topic", cascade="all, delete-orphan", lazy="selectin")
+    logs = relationship("MonitoringLog", back_populates="topic", cascade="all, delete-orphan", lazy="selectin")
 
     def get_keywords_list(self):
         """Returns keywords as a clean list of trimmed strings."""
@@ -66,8 +66,8 @@ class Article(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    topic = relationship("Topic", back_populates="articles")
-    alerts = relationship("Alert", back_populates="article", cascade="all, delete-orphan")
+    topic = relationship("Topic", back_populates="articles", lazy="joined")
+    alerts = relationship("Alert", back_populates="article", cascade="all, delete-orphan", lazy="selectin")
 
     def get_key_points_list(self):
         if not self.key_points:
@@ -128,7 +128,7 @@ class MonitoringLog(Base):
     steps = Column(Text, nullable=True)  # JSON-encoded list of step audit logs
 
     # Relationships
-    topic = relationship("Topic", back_populates="logs")
+    topic = relationship("Topic", back_populates="logs", lazy="joined")
 
     def get_steps_list(self):
         if not self.steps:
@@ -163,7 +163,7 @@ class Alert(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    article = relationship("Article", back_populates="alerts")
+    article = relationship("Article", back_populates="alerts", lazy="joined")
 
     def to_dict(self):
         return {
