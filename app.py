@@ -398,6 +398,22 @@ def api_health():
     })
 
 
+@app.errorhandler(404)
+def page_not_found(e):
+    """Diagnostic 404 handler for Vercel serverless debugging."""
+    return jsonify({
+        "status": 404,
+        "error": "Route Not Found",
+        "request_path": request.path,
+        "request_url": request.url,
+        "environ_path_info": request.environ.get("PATH_INFO"),
+        "x_forwarded_uri": request.environ.get("HTTP_X_FORWARDED_URI"),
+        "x_matched_path": request.environ.get("HTTP_X_MATCHED_PATH"),
+        "x_vercel_id": request.environ.get("HTTP_X_VERCEL_ID"),
+        "path_info_keys": [k for k in request.environ.keys() if "PATH" in k or "URI" in k or "VERCEL" in k]
+    }), 404
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1")
